@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import typing
 import warnings
+import matplotlib.pyplot as plt
 
 warnings.filterwarnings("ignore")
 
@@ -115,8 +116,8 @@ class TensorLearn:
 
         # reshape：张量形状重构
         # 当张量在内存中是连续时，返回的张量和原来的张量共享数据内存，改变一个变量时，另一个变量也会被改变。
-        t = torch.randperm(8) # 生成0到8的随机排列[0,8)
-        t_reshape = torch.reshape(t, (-1, 2, 2)) # -1代表通过其他维度自行推断
+        t = torch.randperm(8)  # 生成0到8的随机排列[0,8)
+        t_reshape = torch.reshape(t, (-1, 2, 2))  # -1代表通过其他维度自行推断
         print("t:{}\nt_reshape:\n{}".format(t, t_reshape))
         # 修改张量 t 的第 0 个元素，张量 t_reshape 也会被改变
         t[0] = 1024
@@ -145,18 +146,97 @@ class TensorLearn:
         t_1 = torch.squeeze(t, dim=1)
         print("t.shape: {}".format(t.shape))
         print("t: {}".format(t))
-        print("t_sq.shape: {}".format(t_sq.shape)) # torch.Size([2, 3])
+        print("t_sq.shape: {}".format(t_sq.shape))  # torch.Size([2, 3])
         print("t_sq: {}".format(t_sq))
-        print("t_0.shape: {}".format(t_0.shape)) # torch.Size([2, 3, 1])
-        print("t_1.shape: {}".format(t_1.shape)) # torch.Size([1, 2, 3, 1])
+        print("t_0.shape: {}".format(t_0.shape))  # torch.Size([2, 3, 1])
+        print("t_1.shape: {}".format(t_1.shape))  # torch.Size([1, 2, 3, 1])
         # unsqueeze：根据dim扩展维度，长度为1
+        t = torch.randn(size=(2, 3))
+        t_unsqueeze = torch.unsqueeze(input=t, dim=0)
+        print("t.shape: {}".format(t.shape))  # torch.Size([2, 3])
+        print("t: {}".format(t))
+        print("t_unsqueeze.shape: {}".format(t_unsqueeze.shape))  # torch.Size([1, 2, 3])
+        print("t_unsqueeze: {}".format(t_unsqueeze))
 
+    def tensor_demo_4(self):
+        """
+        张量的运算
 
+        :return: None
+        """
+        # add
+        t = torch.ones((2, 2))
+        t_add = torch.add(input=t, other=t, alpha=2)  # input + alpha * other
+        print("t :{}\nt_add: {}".format(t, t_add))
 
+        # addcdiv
+        t = torch.ones((2, 2))
+        a = torch.randn((2, 2))
+        b = torch.addcdiv(input=t, tensor1=a, tensor2=t, value=2)  # input + value * (tensor1 / tensor2)
+        print("t :{}\na: {}\nb: {}".format(t, a, b))
+
+        # addcmul
+        t = torch.ones((2, 2))
+        a = torch.arange(start=1, end=5).reshape((2, 2))
+        b = torch.addcmul(input=t, tensor1=t, tensor2=a, value=1)  # input + value * tensor1 * tensor2
+        print("t :{}\na: {}\nb: {}".format(t, a, b))
+
+    def tensor_demo_5(self):
+        """
+        构建简单的一元线性回归
+
+        :return: None
+        """
+        torch.manual_seed(10)
+        x = torch.rand(size=(20, 1)) * 10
+        # print(x)
+        y = 2 * x + (5 + torch.randn(size=(20, 1))) # torch.randn(size=(20, 1) 标准正态分布模拟噪声
+        # print(y)
+        w = torch.randn(size=(1,), requires_grad=True)
+        # print(w)
+        b = torch.zeros(size=(1,), requires_grad=True)
+        # print(b)
+        lr = 0.05
+        for iteration in range(1000):
+            # w * x
+            wx = torch.mul(w, x)
+            # y = w * x + b
+            y_pred = torch.add(wx, b)
+
+            # 计算均方误差为损失函数
+            loss = (0.5 * (y - y_pred) ** 2).mean()
+            # 反向传播
+            loss.backward()
+
+            # 更新参数b
+            b.data.sub_(lr * b.grad)
+            # 更新参数w
+            w.data.sub_(lr * w.grad)
+
+            # 更新完之后梯度要归0
+            b.grad.zero_()
+            w.grad.zero_()
+
+            # 绘图，每隔20次重新绘制直线
+            if iteration % 20 == 0:
+                plt.scatter(x.data.numpy(), y.data.numpy())
+                plt.plot(x.data.numpy(), y_pred.data.numpy(), '-', lw=3)
+                plt.text(2, 20, 'Loss=%.4f' % loss.data.numpy(), fontdict={'size': 20, 'color': 'red'})
+                plt.xlim(1.5, 10)
+                plt.ylim(8, 28)
+                plt.title("Iteration: {}\nw: {} b: {}".format(iteration, w.data.numpy(), b.data.numpy()))
+                plt.pause(0.5)
+                plt.clf() # 清除图像
+
+                # 如果 MSE 小于 1，则停止训练
+                if loss.data.numpy() < 1:
+                    break
 
 
 if __name__ == '__main__':
     tensor_learn = TensorLearn()
     # tensor_learn.tensor_demo_1()
     # tensor_learn.tensor_demo_2()
-    tensor_learn.tensor_demo_3()
+    # tensor_learn.tensor_demo_3()
+    # tensor_learn.tensor_demo_4()
+    tensor_learn.tensor_demo_5()
